@@ -4,7 +4,7 @@ function App() {
   const [message, setMessage] = useState("Connecting to Backend...")
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/test/')
+    fetch(`${import.meta.env.VITE_API_URL}/api/test/`)
       .then(response => {
         if (!response.ok) throw new Error("Network response was not ok");
         return response.json();
