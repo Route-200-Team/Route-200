@@ -37,17 +37,24 @@ function App() {
     }
   };
 
-  // --- Fetch Trips ---
-  useEffect(() => {
-    if (token) {
-      fetch(`${import.meta.env.VITE_API_URL}/api/trips/`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      .then(res => res.json())
-      .then(data => setTrips(Array.isArray(data) ? data : []))
-      .catch(() => console.error("Failed to load trips."));
+const token = localStorage.getItem('access_token'); // Or wherever you store it
+
+const fetchTrips = async () => {
+  const response = await fetch('http://3.144.125.30:8000/api/trips', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` // This is the missing piece!
     }
-  }, [token]);
+  });
+
+  if (response.status === 401) {
+    console.error("Token is missing or expired");
+  } else {
+    const data = await response.json();
+    setTrips(data);
+  }
+};
 
   const styles = {
     layout: { display: 'flex', height: '100vh', backgroundColor: '#f4f7f6', fontFamily: 'sans-serif' },
