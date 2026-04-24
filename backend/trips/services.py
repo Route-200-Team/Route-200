@@ -18,38 +18,28 @@ def get_weather(city):
     return response.json()
 
 
-def get_amadeus_token():
-    url = "https://test.api.amadeus.com/v1/security/oauth2/token"
-
-    data = {
-        "grant_type": "client_credentials",
-        "client_id": os.environ.get("AMADEUS_API_KEY"),
-        "client_secret": os.environ.get("AMADEUS_API_SECRET"),
-    }
-
-    response = requests.post(url, data=data, timeout=10)
-    response.raise_for_status()
-    return response.json()["access_token"]
-
-
 def get_flights(origin, destination, date):
-    token = get_amadeus_token()
+    api_key = os.environ.get("RAPIDAPI_KEY")
 
-    url = "https://test.api.amadeus.com/v2/shopping/flight-offers"
+    url = "https://sky-scrapper.p.rapidapi.com/api/v1/flights/searchFlights"
 
     headers = {
-        "Authorization": f"Bearer {token}"
+        "X-RapidAPI-Key": api_key,
+        "X-RapidAPI-Host": "sky-scrapper.p.rapidapi.com"
     }
 
     params = {
-        "originLocationCode": origin,
-        "destinationLocationCode": destination,
-        "departureDate": date,
-        "adults": 1,
-        "max": 10,
-        "currencyCode": "USD",
+        "originSkyId": origin,
+        "destinationSkyId": destination,
+        "originEntityId": origin,
+        "destinationEntityId": destination,
+        "date": date,
+        "adults": "1",
+        "currency": "USD",
+        "countryCode": "US",
+        "market": "en-US",
     }
 
-    response = requests.get(url, headers=headers, params=params, timeout=10)
+    response = requests.get(url, headers=headers, params=params, timeout=15)
     response.raise_for_status()
     return response.json()
