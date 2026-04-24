@@ -1,0 +1,156 @@
+import requests
+from rest_framework import generics, status, permissions
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+
+from .models import Trip, SavedActivity
+from .serializers import (
+    RegisterSerializer,
+    UserSerializer,
+    TripSerializer,
+    TripWriteSerializer,
+    SavedActivitySerializer,
+)
+from . import services
+
+
+# Auth Views
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = RegisterSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "user": UserSerializer(user).data,
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+        }, status=status.HTTP_201_CREATED)
+
+
+class LoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
+        user = authenticate(username=username, password=password)
+        if not user:
+            return Response(
+                {"error": "Invalid credentials"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "user": UserSerializer(user).data,
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+        })
+
+
+class ProfileView(generics.RetrieveAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+
+# Trip Views
+
+class TripListCreateView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Trip.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return TripSerializer
+        return TripWriteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class TripDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Trip.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return TripSerializer
+        return TripWriteSerializer
+
+
+# Saved Activity Views
+
+class SavedActivityListCreateView(generics.ListCreateAPIView):
+    serializer_class = SavedActivitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SavedActivity.objects.filter(trip__user=self.request.user)
+
+
+class SavedActivityDetailView(generics.RetrieveDestroyAPIView):
+    serializer_class = SavedActivitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SavedActivity.objects.filter(trip__user=self.request.user)
+
+
+# External API Proxy Views
+
+class WeatherView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        city = request.query_params.get("city")
+        if not city:
+            return Response(
+                {"error": "city param required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            data = services.get_weather(city)
+            return Response(data)
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+
+
+class FlightsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        origin = request.query_params.get("origin")
+        destination = request.query_params.get("destination")
+        date = request.query_params.get("date")
+
+        if not all([origin, destination, date]):
+            return Response(
+                {"error": "origin, destination, and date are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            data = services.get_flights(origin, destination, date)
+            return Response(data)
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
