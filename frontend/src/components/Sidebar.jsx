@@ -15,7 +15,12 @@ function Sidebar({ view, setView, isNavOpen, setIsNavOpen, onSignOut }) {
       transition={{ duration: 0.25, ease: "easeInOut" }}
     >
       <div className="sidebar-header">
-        {isNavOpen && <h1 className="sidebar-logo">ROUTE 200</h1>}
+        {/* {isNavOpen && <h1 className="sidebar-logo">ROUTE 200</h1>} */}
+        {isNavOpen && (
+          <div className="sidebar-logo">
+            <img src="/logo.png" alt="Route 200 logo" />
+          </div>
+        )}
 
         <button
           className="icon-button"

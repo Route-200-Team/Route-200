@@ -144,10 +144,16 @@ input:focus {
 }
 
 .sidebar-logo {
-  margin: 0;
-  font-size: 1.15rem;
-  letter-spacing: -0.04em;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.sidebar-logo img {
+  height: 75px;
+  width: auto;
+  display: block;
 }
 
 .icon-button {

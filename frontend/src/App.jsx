@@ -67,8 +67,8 @@ function App() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
         >
-          <h1>ROUTE 200</h1>
-          <p>Budget Trip Planner</p>
+          <img src="/logo.png" alt="Route 200 logo" style={{ height: 125 }} />
+          
 
           <form onSubmit={handleSubmit}>
             <input
